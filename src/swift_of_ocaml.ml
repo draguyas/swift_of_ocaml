@@ -1,9 +1,11 @@
 open Cmt_format
 
-let cmt_file = ref ""
-let output_file = ref "a.out.php"
 
-let use = "Usage: php_of_ocaml <cmt_file>"
+let extension_swift="caca"
+let cmt_file = ref ""
+let output_file = ref ("a.out."^extension_swift)
+
+let use = "Usage: swift_of_ocaml <cmt_file>"
                    
 let () =
   let open Arg in
