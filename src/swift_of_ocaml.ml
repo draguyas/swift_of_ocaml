@@ -1,9 +1,7 @@
 open Cmt_format
 
-
-let extension_swift="caca"
 let cmt_file = ref ""
-let output_file = ref ("a.out."^extension_swift)
+let output_file = ref "a.out.swift"
 
 let use = "Usage: swift_of_ocaml <cmt_file>"
                    

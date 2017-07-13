@@ -1,3 +1,1 @@
-let x = 3
-
-let c = 'c'
+let f x y z= x + y + z

@@ -1,5 +1,5 @@
 TARGET=swift_of_ocaml
-TEST_FILE=let-binding.cmt
+TEST_FILE=let_binding.cmt
 
 
 all:
@@ -8,7 +8,7 @@ all:
 
 clean:
 	ocamlbuild -clean
-	rm -rf tests/*.php
+	rm -rf tests/*.swift
 
 test: all
 	cd tests && ../$(TARGET).native $(TEST_FILE)
