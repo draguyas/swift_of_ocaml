@@ -2,7 +2,6 @@ open Typedtree
 open Path
 open Types
 open Asttypes
-open Path
 
 
 type env = { func_decl : (string list) Func_table.t;
@@ -85,7 +84,25 @@ and generate_constant fmt cst =
        
 and generate_binop fmt op_name =
   Format.fprintf fmt "%s" (Binop.(OpMap.find op_name binop_map))
-  
+
+and gen_args fmt args =
+    match args with
+      [] -> ()
+    | e::[] -> (match e with
+                  (_,Some exp) ->
+                  Format.fprintf fmt "%a"
+                                 generate_expression
+                                 exp.exp_desc;
+                | _ -> ())
+             
+    | e::l -> (match e with
+                 (_,Some exp) ->
+                 Format.fprintf fmt "%a,"
+                                generate_expression
+                                exp.exp_desc;
+                 gen_args fmt l;
+               | _ -> ())
+            
 and generate_apply fmt expr args =
   match expr.exp_desc with
   | Texp_ident
@@ -102,8 +119,17 @@ and generate_apply fmt expr args =
        )
      else
        (* Todo : à voir *)
-       () 
-  | _ -> ()
+       Printf.printf "else"
+    
+  | Texp_ident (path,_,_) ->
+     (match path with
+        Pident ident -> gen_ident fmt path;
+                        Format.fprintf fmt "(";
+                        gen_args fmt args;
+                        Format.fprintf fmt ")";
+                        
+      | _ -> ())
+  | _ -> Printf.printf "autre\n"
        
        
 and generate_expression fmt exp_desc =
@@ -119,9 +145,12 @@ and generate_expression fmt exp_desc =
      Format.fprintf fmt "\n}\n"
   | Texp_ident (path,_,_) ->
      gen_ident fmt path
+  | Texp_let (_,value_binding,expr) ->
+     List.iter (fun x -> generate_value_binding fmt x) value_binding;
+     generate_expression fmt expr.exp_desc
   | _ -> raise (Not_implemented_yet "generate_expression")
     
-let generate_value_binding fmt value_binding =
+and generate_value_binding fmt value_binding =
   let {vb_pat; vb_expr; vb_attributes; vb_loc} = value_binding in
   
   let ident  =
