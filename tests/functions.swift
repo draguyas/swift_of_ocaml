@@ -1,9 +1,8 @@
-func f (_ x : Int, _ y : Int ) -> Int {
-return ((x * 4) + y)
+func f (_ x : Int ) -> Int {
+switch x {
+case 3 : return 3
+default : return 1
+}
 }
 
-func g (_ y : Int ) -> Int {
-return (y * 4)
-}
 
-(f(3,2) + g(3))

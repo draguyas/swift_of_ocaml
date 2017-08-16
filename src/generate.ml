@@ -2,8 +2,8 @@ open Typedtree
 open Path
 open Types
 open Asttypes
-
-
+   
+   
 type env = { func_decl : (string list) Func_table.t;
              have_return : bool
            }
@@ -11,7 +11,7 @@ type env = { func_decl : (string list) Func_table.t;
 exception Not_implemented_yet of string
                                
 (* faire une table des binop et des conversions binop caml -> swift*)
-
+                               
 let rec gen_func fmt l cpt=
   match l with
     [] -> ()
@@ -32,12 +32,69 @@ let rec gen_func fmt l cpt=
         (match e.c_rhs.exp_desc with
            Texp_function (_,l,_) ->
            gen_func fmt l (cpt-1)
+           
          | Texp_apply (expr,args) ->
             Format.fprintf fmt ") -> %s {\nreturn "
                            (get_type e.c_rhs.exp_type);
             generate_apply fmt expr args
-         | _ -> ())
+            
+         | Texp_ifthenelse (cond,thens, Some elses) ->
+            Format.fprintf fmt ") -> %s {\n"
+                           (get_type e.c_rhs.exp_type);
+            Format.fprintf fmt "if %a {\n %a%a\n}else{\n %a%a \n}"
+                           generate_expression cond.exp_desc
+                           flag_return thens.exp_desc
+                           generate_expression thens.exp_desc
+                           flag_return elses.exp_desc
+                           generate_expression elses.exp_desc;
+
+         | Texp_let (_,val_binds,expr) ->
+            Format.fprintf fmt ") -> %s {\n"
+                           (get_type e.c_rhs.exp_type);
+            List.iter (generate_value_binding fmt) val_binds;
+            Format.fprintf fmt "%a%a"
+                           flag_return expr.exp_desc
+                           generate_expression expr.exp_desc
+
+         | Texp_match (expr,c1,c2,_) ->
+            Format.fprintf fmt ") -> %s {\n"
+                           (get_type e.c_rhs.exp_type);
+            Format.fprintf fmt "switch %a {\n%a"
+                           generate_expression expr.exp_desc
+                           generate_match c1;
+            
+         | Texp_sequence (expr1,expr2) ->
+            Format.fprintf fmt ") -> %s {\n"
+                           (get_type e.c_rhs.exp_type);
+            generate_expression fmt expr1.exp_desc;
+            Format.fprintf fmt "\n";
+            flag_return fmt expr2.exp_desc;
+            generate_expression fmt expr2.exp_desc;
+            
+         | _ -> Format.fprintf fmt "error gen_func")
       | _ -> ());
+
+and generate_match_pattern fmt c_lhs =
+  match c_lhs.pat_desc with
+    Tpat_constant cst -> Format.fprintf fmt "case %a"
+                                        generate_constant cst
+  | Tpat_any  -> Format.fprintf fmt "default"
+  | _ -> ()
+       
+and generate_match fmt cases =
+  List.iter (fun x ->
+      Format.fprintf fmt "%a : %a%a\n"
+                     generate_match_pattern x.c_lhs
+                     flag_return x.c_rhs.exp_desc
+                     generate_expression x.c_rhs.exp_desc;
+    ) cases;
+  Format.fprintf fmt "}"
+     
+and flag_return fmt expr_desc =
+  match expr_desc with
+    Texp_apply _ -> Format.fprintf fmt "return "
+  | Texp_constant _ -> Format.fprintf fmt "return "
+  | _ -> ()
      
 and cpt_var l cpt=
   match l with
@@ -57,19 +114,26 @@ and get_type pat_type =
                              Pident ident ->
                              transform_type ident.Ident.name
                             |_ -> "")
-  | _ -> "autre"
-
+  | Tpoly _ -> "poly"
+  | Tobject _ -> "object"
+  | Tfield _ -> "field"
+  | Tnil -> "nil"
+  | Tsubst _ -> "subst"
+  | Tvariant _ -> "variant"
+  | Tpackage _ -> "package"
+  | Tvar _ -> "alpha"
+       
 and transform_type types =
   match types with
     "int" -> "Int"
   | "string" -> "String"
   | _ -> types
-      
+       
 and gen_ident fmt path =
   match path with
     Pident ident -> Format.fprintf fmt "%s" ident.Ident.name
   | _ -> ()
-    
+       
 and generate_constant fmt cst =
   let open Asttypes in
   match cst with
@@ -79,30 +143,29 @@ and generate_constant fmt cst =
   | Const_int32 i -> Format.fprintf fmt "%ld" i
   | Const_int64 i -> Format.fprintf fmt "%Ld" i
   | Const_nativeint i -> Format.fprintf fmt "%nd" i
-                       
-  | _ -> raise (Not_implemented_yet "generate_constant")
+  | Const_string (s,_) -> Format.fprintf fmt "%s" s
        
 and generate_binop fmt op_name =
   Format.fprintf fmt "%s" (Binop.(OpMap.find op_name binop_map))
-
+  
 and gen_args fmt args =
-    match args with
-      [] -> ()
-    | e::[] -> (match e with
-                  (_,Some exp) ->
-                  Format.fprintf fmt "%a"
-                                 generate_expression
-                                 exp.exp_desc;
-                | _ -> ())
-             
-    | e::l -> (match e with
-                 (_,Some exp) ->
-                 Format.fprintf fmt "%a,"
-                                generate_expression
-                                exp.exp_desc;
-                 gen_args fmt l;
-               | _ -> ())
-            
+  match args with
+    [] -> ()
+  | e::[] -> (match e with
+                (_,Some exp) ->
+                Format.fprintf fmt "%a"
+                               generate_expression
+                               exp.exp_desc;
+              | _ -> ())
+           
+  | e::l -> (match e with
+               (_,Some exp) ->
+               Format.fprintf fmt "%a,"
+                              generate_expression
+                              exp.exp_desc;
+               gen_args fmt l;
+             | _ -> ())
+          
 and generate_apply fmt expr args =
   match expr.exp_desc with
   | Texp_ident
@@ -110,7 +173,6 @@ and generate_apply fmt expr args =
      if Binop.is_binop op_name then
        (match args with
           (_, Some exp1)::(_, Some exp2)::[] ->
-          
           Format.fprintf fmt "(%a %a %a)"
                          generate_expression exp1.exp_desc
                          generate_binop op_name
@@ -128,28 +190,56 @@ and generate_apply fmt expr args =
                         gen_args fmt args;
                         Format.fprintf fmt ")";
                         
-      | _ -> ())
+      | _ -> ()
+     )
+ 
   | _ -> Printf.printf "autre\n"
-       
+
+
+and generate_construct fmt constr_desc =
+  match constr_desc.cstr_name with
+    "()" -> ()
+  | s -> Format.fprintf fmt "%s" s
        
 and generate_expression fmt exp_desc =
   match exp_desc with
   | Texp_constant cst ->
      generate_constant fmt cst
+    
   | Texp_apply (expr,args) ->
      generate_apply fmt expr args
+    
   | Texp_function (_,l,_) ->
      let cpt = cpt_var l 0 in
      Format.fprintf fmt "(";
      gen_func fmt l cpt;
      Format.fprintf fmt "\n}\n"
+     
   | Texp_ident (path,_,_) ->
      gen_ident fmt path
+    
   | Texp_let (_,value_binding,expr) ->
      List.iter (fun x -> generate_value_binding fmt x) value_binding;
      generate_expression fmt expr.exp_desc
+     
+  | Texp_ifthenelse (cond,thens, Some elses) ->
+     Format.fprintf fmt "if %a{\n %a%a\n}else{\n %a%a}\n)"
+                    generate_expression cond.exp_desc
+                    flag_return thens.exp_desc
+                    generate_expression thens.exp_desc
+                    flag_return elses.exp_desc
+                    generate_expression elses.exp_desc;
+     
+  | Texp_construct (_,constr_desc,_) ->
+     generate_construct fmt constr_desc
+
+  | Texp_sequence (expr1,expr2) ->
+     generate_expression fmt expr1.exp_desc;
+     Format.fprintf fmt "\n";
+     generate_expression fmt expr2.exp_desc;
+     
   | _ -> raise (Not_implemented_yet "generate_expression")
-    
+       
 and generate_value_binding fmt value_binding =
   let {vb_pat; vb_expr; vb_attributes; vb_loc} = value_binding in
   
@@ -170,7 +260,7 @@ and generate_value_binding fmt value_binding =
                          ident.Ident.name
                          generate_expression vb_expr.exp_desc
         
-          
+        
 let generate_structure_item fmt item =
   let { str_desc; _ } = item in
   match str_desc with
@@ -194,4 +284,5 @@ let generate_from_structure fmt structure =
   (* Flushing the output *)
   Format.fprintf fmt "\n%!";
   ()
+  
   

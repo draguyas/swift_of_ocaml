@@ -1,42 +1,38 @@
 [
-  structure_item (functions.ml[1,0+0]..[2,19+3])
-    Pstr_eval
-    expression (functions.ml[1,0+0]..[2,19+3])
-      Pexp_let Nonrec
-      [
-        <def>
-          pattern (functions.ml[1,0+4]..[1,0+5])
-            Ppat_var "f" (functions.ml[1,0+4]..[1,0+5])
-          expression (functions.ml[1,0+6]..[1,0+15]) ghost
-            Pexp_fun
-            Nolabel
-            None
-            pattern (functions.ml[1,0+6]..[1,0+7])
-              Ppat_var "x" (functions.ml[1,0+6]..[1,0+7])
-            expression (functions.ml[1,0+10]..[1,0+15])
-              Pexp_apply
-              expression (functions.ml[1,0+12]..[1,0+13])
-                Pexp_ident "*" (functions.ml[1,0+12]..[1,0+13])
-              [
-                <arg>
-                Nolabel
-                  expression (functions.ml[1,0+10]..[1,0+11])
-                    Pexp_ident "x" (functions.ml[1,0+10]..[1,0+11])
-                <arg>
-                Nolabel
-                  expression (functions.ml[1,0+14]..[1,0+15])
-                    Pexp_constant PConst_int (4,None)
-              ]
-      ]
-      expression (functions.ml[2,19+0]..[2,19+3])
-        Pexp_apply
-        expression (functions.ml[2,19+0]..[2,19+1])
-          Pexp_ident "f" (functions.ml[2,19+0]..[2,19+1])
-        [
-          <arg>
+  structure_item (functions.ml[1,0+0]..[1,0+35])
+    Pstr_value Nonrec
+    [
+      <def>
+        pattern (functions.ml[1,0+4]..[1,0+5])
+          Ppat_var "f" (functions.ml[1,0+4]..[1,0+5])
+        expression (functions.ml[1,0+6]..[1,0+35]) ghost
+          Pexp_fun
           Nolabel
-            expression (functions.ml[2,19+2]..[2,19+3])
-              Pexp_constant PConst_int (3,None)
-        ]
+          None
+          pattern (functions.ml[1,0+6]..[1,0+7])
+            Ppat_var "x" (functions.ml[1,0+6]..[1,0+7])
+          expression (functions.ml[1,0+10]..[1,0+35])
+            Pexp_apply
+            expression (functions.ml[1,0+12]..[1,0+13])
+              Pexp_ident "+" (functions.ml[1,0+12]..[1,0+13])
+            [
+              <arg>
+              Nolabel
+                expression (functions.ml[1,0+10]..[1,0+11])
+                  Pexp_ident "x" (functions.ml[1,0+10]..[1,0+11])
+              <arg>
+              Nolabel
+                expression (functions.ml[1,0+14]..[1,0+35])
+                  Pexp_ifthenelse
+                  expression (functions.ml[1,0+17]..[1,0+21])
+                    Pexp_construct "true" (functions.ml[1,0+17]..[1,0+21])
+                    None
+                  expression (functions.ml[1,0+27]..[1,0+28])
+                    Pexp_constant PConst_int (2,None)
+                  Some
+                    expression (functions.ml[1,0+34]..[1,0+35])
+                      Pexp_constant PConst_int (3,None)
+            ]
+    ]
 ]
 
