@@ -41,7 +41,7 @@ let rec gen_func fmt l cpt=
          | Texp_ifthenelse (cond,thens, Some elses) ->
             Format.fprintf fmt ") -> %s {\n"
                            (get_type e.c_rhs.exp_type);
-            Format.fprintf fmt "if %a {\n %a%a\n}else{\n %a%a \n}"
+            Format.fprintf fmt "if %a {\n %a%a\n}else{\n %a%a\n}"
                            generate_expression cond.exp_desc
                            flag_return thens.exp_desc
                            generate_expression thens.exp_desc
@@ -127,6 +127,7 @@ and transform_type types =
   match types with
     "int" -> "Int"
   | "string" -> "String"
+  | "float" -> "Float"
   | _ -> types
        
 and gen_ident fmt path =
@@ -139,11 +140,11 @@ and generate_constant fmt cst =
   match cst with
   | Const_int i -> Format.fprintf fmt "%d" i
   | Const_char c -> Format.fprintf fmt "\'%c\'" c
-  | Const_float f -> Format.fprintf fmt "%s" f
+  | Const_float f -> Format.fprintf fmt "%s0" f
   | Const_int32 i -> Format.fprintf fmt "%ld" i
   | Const_int64 i -> Format.fprintf fmt "%Ld" i
   | Const_nativeint i -> Format.fprintf fmt "%nd" i
-  | Const_string (s,_) -> Format.fprintf fmt "%s" s
+  | Const_string (s,_) -> Format.fprintf fmt "\"%s\"" s
        
 and generate_binop fmt op_name =
   Format.fprintf fmt "%s" (Binop.(OpMap.find op_name binop_map))
@@ -223,7 +224,7 @@ and generate_expression fmt exp_desc =
      generate_expression fmt expr.exp_desc
      
   | Texp_ifthenelse (cond,thens, Some elses) ->
-     Format.fprintf fmt "if %a{\n %a%a\n}else{\n %a%a}\n)"
+     Format.fprintf fmt "if %a{\n %a%a\n}else{\n %a%a}\n"
                     generate_expression cond.exp_desc
                     flag_return thens.exp_desc
                     generate_expression thens.exp_desc
